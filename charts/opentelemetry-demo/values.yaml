@@ -7,7 +7,9 @@ default:
           apiVersion: v1
           fieldPath: "metadata.labels['app.kubernetes.io/component']"
     - name: OTEL_COLLECTOR_NAME
-      value: '{{ include "otel-demo.name" . }}-otelcol'
+#      value: '{{ include "otel-demo.name" . }}-otelcol'
+#      value: 'cx-otel-collector-service.cx-eks-fargate-otel.svc.cluster.local'
+      value: 'localhost'
     - name: OTEL_EXPORTER_OTLP_METRICS_TEMPORALITY_PREFERENCE
       value: cumulative
     - name: OTEL_RESOURCE_ATTRIBUTES
@@ -170,7 +172,7 @@ components:
         memory: 120Mi
     initContainers:
       - name: wait-for-kafka
-        image: busybox:latest
+        image: 104013952213.dkr.ecr.us-west-2.amazonaws.com/ianbowers/busybox:latest
         command: ['sh', '-c', 'until nc -z -v -w30 {{ include "otel-demo.name" . }}-kafka 9092; do echo waiting for kafka; sleep 2; done;']
 
   adService:
@@ -218,7 +220,7 @@ components:
         memory: 160Mi
     initContainers:
       - name: wait-for-valkey
-        image: busybox:latest
+        image: 104013952213.dkr.ecr.us-west-2.amazonaws.com/ianbowers/busybox:latest
         command: ['sh', '-c', 'until nc -z -v -w30 {{ include "otel-demo.name" . }}-valkey 6379; do echo waiting for valkey; sleep 2; done;']
 
   checkoutService:
@@ -255,7 +257,7 @@ components:
         memory: 20Mi
     initContainers:
       - name: wait-for-kafka
-        image: busybox:latest
+        image: 104013952213.dkr.ecr.us-west-2.amazonaws.com/ianbowers/busybox:latest
         command: ['sh', '-c', 'until nc -z -v -w30 {{ include "otel-demo.name" . }}-kafka 9092; do echo waiting for kafka; sleep 2; done;']
 
   currencyService:
@@ -310,7 +312,7 @@ components:
         memory: 300Mi
     initContainers:
       - name: wait-for-kafka
-        image: busybox:latest
+        image: 104013952213.dkr.ecr.us-west-2.amazonaws.com/ianbowers/busybox:latest
         command: ['sh', '-c', 'until nc -z -v -w30 {{ include "otel-demo.name" . }}-kafka 9092; do echo waiting for kafka; sleep 2; done;']
 
   frontend:
