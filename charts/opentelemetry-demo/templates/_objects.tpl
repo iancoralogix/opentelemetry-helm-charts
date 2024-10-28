@@ -79,7 +79,60 @@ spec:
               subPath: {{ .subPath }}
               {{- end }}
           {{- end }}
+            - name: shared-logs
+              # Make sure this matches the filelog receiver in the OTEL config.
+              mountPath: /logs
+
+        - name: cx-otel-sidecar
+          # image: otel/opentelemetry-collector-contrib:latest
+          image: 104013952213.dkr.ecr.us-west-2.amazonaws.com/ianbowers/opentelemetry-collector-contrib:latest
+          ports:
+            - name: grpc
+              containerPort: 4317
+              protocol: TCP
+            - name: http
+              containerPort: 4318
+              protocol: TCP
+          command:
+            - "/otelcol-contrib"
+            - "--config=/conf/cx-otel-sidecar-config.yaml"
+          env:
+            - name: OTEL_RESOURCE_ATTRIBUTES
+              value: "ClusterName=ian-bowers-eks-usw2"
+            - name: CORALOGIX_DOMAIN
+              value: "cx498.coralogix.com"
+            - name: CX_APPLICATION
+              value: "EKS"
+            - name: CX_SUBSYSTEM
+              value: {{ include "otel-demo.name" . }}-{{ .name }}
+            # This is the private key for Coralogix. It should be stored in a secret. E.g.:
+            #   kubectl create secret generic coralogix-keys -n $NAMESPACE --from-literal=PRIVATE_KEY=$PRIVATE_KEY
+            - name: CORALOGIX_PRIVATE_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: coralogix-keys
+                  key: PRIVATE_KEY
+          # This is the shared volume between the application container and the OTEL sidecar container.
+          volumeMounts:
+            - name: cx-otel-sidecar-config-volume
+              mountPath: /conf
+            - name: shared-logs
+              # Make sure this matches the filelog receiver in the OTEL config.
+              mountPath: /logs
+
       volumes:
+        # This is the shared volume between the application container and the OTEL sidecar container.
+        - name: shared-logs
+          emptyDir: {}
+
+          # This is the volume that contains the OTEL config.
+        - name: cx-otel-sidecar-config-volume
+          configMap:
+            name: cx-otel-sidecar-config
+            items:
+              - key: cx-otel-sidecar-config
+                path: cx-otel-sidecar-config.yaml
+
         {{- range .mountedConfigMaps }}
         - name: {{ .name | lower}}
           configMap:
@@ -218,11 +271,3 @@ spec:
             pathType: {{ .pathType }}
             backend:
               service:
-                name: {{ include "otel-demo.name" $ }}-{{ $.name }}
-                port:
-                  number: {{ .port }}
-          {{- end }}
-    {{- end }}
-{{- end}}
-{{- end}}
-{{- end}}
